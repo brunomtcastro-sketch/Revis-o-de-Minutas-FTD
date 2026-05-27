@@ -396,7 +396,7 @@ async function handleFile(input){
 function exportBilling(){
   const fc=filtered();
   if(!fc.length){alert("Nenhum registro para exportar.");return;}
-  const rows=fc.map(c=({"Título":c.titulo,"Tipo":c.tipo,"Entrada":c.entrada,"Data Recebimento":c.dataRecebimento,"Rodada":c.rodada,"Status":BL[c.status]||c.status,"Resultado":c.resultado?c.resultado.replace(/_/g," "):"","Observações":c.obs}));
+  const rows=fc.map(c=>({"Título":c.titulo,"Tipo":c.tipo,"Entrada":c.entrada,"Data Recebimento":c.dataRecebimento,"Rodada":c.rodada,"Status":BL[c.status]||c.status,"Resultado":c.resultado?c.resultado.replace(/_/g," "):"","Observações":c.obs}));
   const ws=XLSX.utils.json_to_sheet(rows);
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,"Minutas FTD");
