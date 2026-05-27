@@ -229,14 +229,16 @@ function renderContractsList(){
       +'<thead><tr>'+["Título","Tipo","Recebimento","Rod.","Status","Avançar",""].map(h=>"<th>"+h+"</th>").join("")+'</tr></thead><tbody>'
       +fc.map(c=>{
         const nx=nextStage(c);
+        const atrasada=c.status!=="ftd"&&c.dataRecebimento&&(new Date()-new Date(c.dataRecebimento))>2*24*60*60*1000;
+        const R='#a32d2d';
         const adv=nx
           ?'<button class="btn btn-sm" style="font-size:12px;padding:4px 10px;white-space:nowrap" onclick="event.stopPropagation();quickAdvance(\''+c.id+'\')">→ '+(BL[nx]||nx)+'</button>'
           :'<span style="font-size:12px;color:#aaa">—</span>';
         return'<tr onclick="openDetail(\''+c.id+'\')">'
-          +'<td style="font-weight:500">'+esc(c.titulo)+'</td>'
-          +'<td style="color:#888">'+esc(c.tipo||"—")+'</td>'
-          +'<td style="color:#888">'+fmtDate(c.dataRecebimento)+'</td>'
-          +'<td style="text-align:center"'+(c.rodada>1?' class="rod-warn"':'')+'>'+c.rodada+'</td>'
+          +'<td style="font-weight:500'+(atrasada?';color:'+R:'')+'">'+esc(c.titulo)+'</td>'
+          +'<td style="color:'+(atrasada?R:'#888')+'">'+esc(c.tipo||"—")+'</td>'
+          +'<td style="color:'+(atrasada?R:'#888')+'">'+fmtDate(c.dataRecebimento)+'</td>'
+          +'<td style="text-align:center'+(atrasada?';color:'+R:'')+(c.rodada>1?';font-weight:500':'')+'">'+c.rodada+'</td>'
           +'<td>'+badge(c.status)+'</td>'
           +'<td>'+adv+'</td>'
           +'<td style="text-align:right;color:#aaa">›</td></tr>';
