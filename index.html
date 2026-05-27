@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Controle de Minutas — FTD | MV Costa Advogados</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f4f0;color:#1a1a18;font-size:15px;line-height:1.5}
+  h1{font-size:20px;font-weight:500}h2{font-size:17px;font-weight:500}
+  .app{max-width:900px;margin:0 auto;padding:2rem 1.5rem}
+  .header-left p{font-size:12px;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.5rem}
+  .kpi{background:#fff;border:0.5px solid #e0ddd5;border-radius:10px;padding:1rem;text-align:center}
+  .kpi-label{font-size:13px;color:#888;margin-bottom:4px}
+  .kpi-value{font-size:26px;font-weight:500}
+  .sync-bar{font-size:12px;color:#888;display:flex;align-items:center;gap:8px;margin-bottom:1rem;min-height:20px}
+  .sync-dot{width:8px;height:8px;border-radius:50%;background:#ccc;flex-shrink:0;transition:background .3s}
+  .sync-dot.ok{background:#1d9e75}.sync-dot.err{background:#d85a30}
+  .sync-dot.spin{background:#BA7517;animation:pulse 1s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .tabs{display:flex;border-bottom:1px solid #e0ddd5;margin-bottom:1.5rem;align-items:stretch}
+  .tab-btn{background:none;border:none;border-bottom:2px solid transparent;padding:9px 18px;cursor:pointer;font-family:inherit;font-size:14px;color:#888;display:flex;align-items:center;gap:7px;border-radius:0}
+  .tab-btn.active{font-weight:500;color:#1a1a18;border-bottom-color:#1a1a18}
+  .tab-btn:hover{color:#1a1a18}
+  .tab-action{margin-left:auto;background:none;border:0.5px solid #ccc;border-radius:7px;padding:6px 14px;font-size:13px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;align-self:center;color:#444}
+  .tab-action:hover{background:#f0ede8}
+  .filters{display:flex;gap:12px;margin-bottom:1rem;flex-wrap:wrap;align-items:flex-end}
+  .filter-group{display:flex;flex-direction:column;gap:5px}
+  .filter-group label{font-size:12px;color:#888;font-weight:500}
+  .filter-count{margin-left:auto;font-size:13px;color:#888;align-self:flex-end}
+  input[type=text],input[type=date],select,textarea{font-family:inherit;font-size:14px;background:#fff;border:0.5px solid #d0cec8;border-radius:7px;padding:8px 10px;color:#1a1a18;outline:none;width:100%;transition:border-color .15s}
+  input:focus,select:focus,textarea:focus{border-color:#888}
+  textarea{resize:vertical;line-height:1.5}
+  button.btn{background:#fff;border:0.5px solid #ccc;border-radius:7px;padding:8px 18px;font-family:inherit;font-size:14px;cursor:pointer;color:#1a1a18;display:inline-flex;align-items:center;gap:7px;transition:background .15s}
+  button.btn:hover{background:#f0ede8}
+  button.btn-primary{background:#1a1a18;color:#fff;border-color:#1a1a18}
+  button.btn-primary:hover{background:#333}
+  button.btn-danger{color:#a32d2d;border-color:#f0c0c0}
+  button.btn-danger:hover{background:#fef0f0}
+  button.btn-sm{font-size:13px;padding:6px 14px}
+  .table-wrap{border:0.5px solid #e0ddd5;border-radius:10px;overflow:hidden}
+  table{width:100%;border-collapse:collapse;table-layout:fixed}
+  thead tr{background:#f8f7f3}
+  thead th{padding:10px 12px;text-align:left;font-size:12px;font-weight:500;color:#888;border-bottom:0.5px solid #e0ddd5}
+  tbody tr{cursor:pointer;transition:background .1s}
+  tbody tr:hover{background:#faf9f5}
+  tbody td{padding:10px 12px;border-bottom:0.5px solid #f0ede8;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  .empty{text-align:center;padding:3.5rem;color:#aaa}
+  .badge{display:inline-block;font-size:12px;font-weight:500;padding:3px 9px;border-radius:6px;white-space:nowrap}
+  .badge-recebida{background:#faeeda;color:#633806}
+  .badge-mco_reg{background:#e6f1fb;color:#0c447c}
+  .badge-gbl_analise{background:#eeedfe;color:#3c3489}
+  .badge-mvc_revisao{background:#faece7;color:#712b13}
+  .badge-ftd{background:#eaf3de;color:#27500a}
+  .badge-retorno{background:#fcebeb;color:#791f1f}
+  .badge-mco{background:#e6f1fb;color:#0c447c}
+  .badge-gbl{background:#eeedfe;color:#3c3489}
+  .form-grid{display:flex;flex-direction:column;gap:16px;max-width:520px}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .form-field{display:flex;flex-direction:column;gap:6px}
+  .form-field label{font-size:13px;font-weight:500;color:#555}
+  .detail-panel{background:#fff;border:0.5px solid #e0ddd5;border-radius:12px}
+  .detail-header{display:flex;align-items:flex-start;justify-content:space-between;padding:1.25rem 1.25rem 1rem;gap:12px}
+  .detail-meta{font-size:12px;color:#888;font-weight:500;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+  .detail-section{padding:1.25rem;border-top:0.5px solid #f0ede8}
+  .detail-section-title{font-size:13px;font-weight:500;color:#555;margin-bottom:12px}
+  .stepper{display:flex;align-items:flex-start;overflow-x:auto;padding-bottom:4px}
+  .step-wrap{display:flex;align-items:center;flex:1;min-width:0}
+  .step-node{display:flex;flex-direction:column;align-items:center;min-width:56px;flex:1}
+  .step-circle{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;flex-shrink:0}
+  .step-circle.done{background:#1d9e75;color:#fff}
+  .step-circle.active{background:#534ab7;color:#fff;border:2px solid #534ab7}
+  .step-circle.todo{background:#f8f7f3;color:#888;border:0.5px solid #ccc}
+  .step-label{font-size:10px;text-align:center;margin-top:5px;line-height:1.3;max-width:64px;color:#888}
+  .step-label.active{color:#1a1a18;font-weight:500}
+  .step-line{height:1px;flex:1;min-width:6px;margin-bottom:20px}
+  .step-line.done{background:#1d9e75}
+  .step-line.todo{background:#e0ddd5}
+  .history-entry{display:flex;gap:12px;margin-bottom:10px}
+  .history-date{color:#888;white-space:nowrap;min-width:115px;font-size:11px;padding-top:2px}
+  .history-obs{margin-top:3px;font-size:12px;color:#888}
+  .import-ref{background:#f8f7f3;border-radius:8px;padding:1rem;margin-bottom:1.5rem;font-size:13px}
+  .import-ref table{border-collapse:collapse;width:100%}
+  .import-ref th{text-align:left;padding:4px 8px;color:#888;font-size:12px;font-weight:500}
+  .import-ref td{padding:5px 8px;border-top:0.5px solid #e8e5df}
+  .rod-warn{color:#993c1d;font-weight:500}
+  @media(max-width:640px){.kpis{grid-template-columns:1fr 1fr}.form-row{grid-template-columns:1fr}.app{padding:1rem}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header" style="margin-bottom:1.5rem">
+    <div class="header-left">
+      <p>MV Costa Advogados</p>
+      <h1>Controle de minutas — FTD</h1>
+    </div>
+  </div>
+  <div class="kpis" id="kpis"></div>
+  <div class="sync-bar" id="sync-bar">
+    <div class="sync-dot spin" id="sync-dot"></div>
+    <span id="sync-msg">Conectando...</span>
+    <button class="btn btn-sm" style="margin-left:auto" onclick="doRefresh()">↺ Atualizar</button>
+  </div>
+  <div class="tabs" id="tabs-bar"></div>
+  <div id="content"></div>
+</div>
+<script>
+const SB_URL = "https://nqofgpubfmbfahcheihhb.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5xb2ZncHViZm1iZmFoY2hlaWhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyODIyMzksImV4cCI6MjA5NDg1ODIzOX0.l1fd847-f9e2BUa2c9JOKZO2hc0qfF2KiBamJAnIi_Q";
+const API    = SB_URL + "/rest/v1/minutas";
+const HDR    = {"Content-Type":"application/json","apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY};
+
+const STAGES = [
+  {id:"recebida",label:"Recebida"},
+  {id:"mco_reg",label:"MCO"},
+  {id:"gbl_analise",label:"GBL"},
+  {id:"mvc_revisao",label:"MVC"},
+  {id:"ftd",label:"FTD"},
+];
+const BL = {recebida:"Recebida",mco_reg:"MCO",gbl_analise:"GBL",mvc_revisao:"MVC",ftd:"FTD",retorno:"Retorno FTD"};
+
+let contracts=[], tab="contracts", selected=null, filter={from:"",to:"",status:""};
+
+function today(){return new Date().toISOString().split("T")[0];}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+function fmtDate(iso){if(!iso)return"—";const[y,m,d]=iso.split("-");return d+"/"+m+"/"+y;}
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function nextStage(c){
+  if(c.status==="recebida")    return c.entrada==="GBL"?"gbl_analise":"mco_reg";
+  if(c.status==="mco_reg")     return "gbl_analise";
+  if(c.status==="gbl_analise") return "mvc_revisao";
+  if(c.status==="mvc_revisao") return "ftd";
+  return null;
+}
+
+/* ── Sync indicator ── */
+function setSync(state,msg){
+  const dot=document.getElementById("sync-dot");
+  const txt=document.getElementById("sync-msg");
+  if(!dot)return;
+  dot.className="sync-dot "+(state==="loading"?"spin":state);
+  txt.textContent=msg;
+}
+
+/* ── DB ── */
+async function dbLoad(){
+  setSync("loading","Carregando...");
+  try{
+    const r=await fetch(API+"?order=created_at.desc",{headers:HDR});
+    if(!r.ok)throw new Error(await r.text());
+    contracts=(await r.json()).map(fromDb);
+    setSync("ok","Sincronizado · "+new Date().toLocaleTimeString("pt-BR",{timeStyle:"short"}));
+    try{localStorage.setItem("ftd_cache",JSON.stringify(contracts));}catch(_){}
+  }catch(e){
+    setSync("err","Sem conexão — cache local");
+    try{const d=localStorage.getItem("ftd_cache");if(d)contracts=JSON.parse(d);}catch(_){}
+  }
+}
+async function dbInsert(c){
+  setSync("loading","Salvando...");
+  try{
+    const r=await fetch(API,{method:"POST",headers:{...HDR,"Prefer":"return=minimal"},body:JSON.stringify(toDb(c))});
+    if(!r.ok)throw new Error(await r.text());
+    setSync("ok","Salvo");
+  }catch(e){setSync("err","Erro: "+e.message);}
+}
+async function dbUpdate(c){
+  setSync("loading","Atualizando...");
+  try{
+    const r=await fetch(API+"?id=eq."+c.id,{method:"PATCH",headers:{...HDR,"Prefer":"return=minimal"},body:JSON.stringify(toDb(c))});
+    if(!r.ok)throw new Error(await r.text());
+    setSync("ok","Salvo · "+new Date().toLocaleTimeString("pt-BR",{timeStyle:"short"}));
+  }catch(e){setSync("err","Erro: "+e.message);}
+}
+async function dbDelete(id){
+  setSync("loading","Excluindo...");
+  try{
+    const r=await fetch(API+"?id=eq."+id,{method:"DELETE",headers:HDR});
+    if(!r.ok)throw new Error(await r.text());
+    setSync("ok","Excluído");
+  }catch(e){setSync("err","Erro: "+e.message);}
+}
+function toDb(c){return{id:c.id,titulo:c.titulo,tipo:c.tipo,entrada:c.entrada,data_recebimento:c.dataRecebimento,status:c.status,rodada:c.rodada,resultado:c.resultado,obs:c.obs,historico:c.historico};}
+function fromDb(r){return{id:r.id,titulo:r.titulo,tipo:r.tipo||"",entrada:r.entrada||"MCO",dataRecebimento:r.data_recebimento||"",status:r.status||"recebida",rodada:r.rodada||1,resultado:r.resultado||null,obs:r.obs||"",historico:r.historico||[]};}
+
+/* ── Render ── */
+function badge(s){return'<span class="badge badge-'+s+'">'+(BL[s]||s)+'</span>';}
+function filtered(){
+  return contracts.filter(c=>{
+    if(filter.from&&c.dataRecebimento<filter.from)return false;
+    if(filter.to&&c.dataRecebimento>filter.to)return false;
+    if(filter.status&&c.status!==filter.status)return false;
+    return true;
+  });
+}
+function renderKPIs(){
+  const t=contracts.length,a=contracts.filter(c=>c.status!=="ftd").length,
+        e=contracts.filter(c=>c.status==="ftd").length,r=contracts.filter(c=>c.rodada>1).length;
+  document.getElementById("kpis").innerHTML=
+    [{l:"Total",v:t},{l:"Em andamento",v:a},{l:"Encerradas",v:e},{l:"Com retorno",v:r}]
+    .map(k=>'<div class="kpi"><div class="kpi-label">'+k.l+'</div><div class="kpi-value">'+k.v+'</div></div>').join("");
+}
+function renderTabs(){
+  document.getElementById("tabs-bar").innerHTML=
+    [{id:"contracts",l:"Minutas",ic:"📋"},{id:"new",l:"Nova entrada",ic:"＋"},{id:"import",l:"Importar planilha",ic:"↑"}]
+    .map(t=>'<button class="tab-btn'+(tab===t.id?" active":"")+'" onclick="setTab(\''+t.id+'\')">'+t.ic+" "+t.l+"</button>").join("")
+    +'<button class="tab-action" onclick="exportBilling()">↓ Exportar lista</button>';
+}
+function renderStepper(c){
+  const stages=c.entrada==="GBL"?STAGES.filter(s=>s.id!=="mco_reg"):STAGES;
+  const cur=stages.findIndex(s=>s.id===c.status);
+  return'<div class="stepper">'+stages.map((s,i)=>{
+    const done=i<cur,active=i===cur;
+    return'<div class="step-wrap"><div class="step-node"><div class="step-circle '+(done?"done":active?"active":"todo")+'">'+(done?"✓":(i+1))+'</div><span class="step-label '+(active?"active":"")+'">'+s.label+'</span></div>'+(i<stages.length-1?'<div class="step-line '+(done?"done":"todo")+'"></div>':'')+'</div>';
+  }).join("")+'</div>';
+}
+function renderContractsList(){
+  const fc=filtered();
+  const opts=STAGES.map(s=>'<option value="'+s.id+'"'+(filter.status===s.id?' selected':'')+'>'+s.label+'</option>').join("");
+  const clr=(filter.from||filter.to||filter.status)?'<button class="btn btn-sm" onclick="clearFilter()">✕ Limpar</button>':"";
+  let tbl;
+  if(fc.length===0){
+    tbl='<div class="empty"><div style="font-size:36px;margin-bottom:8px">📂</div><div>Nenhuma minuta encontrada.</div></div>';
+  }else{
+    tbl='<div class="table-wrap"><table><colgroup><col style="width:29%"/><col style="width:16%"/><col style="width:11%"/><col style="width:7%"/><col style="width:18%"/><col style="width:15%"/><col style="width:4%"/></colgroup>'
+      +'<thead><tr>'+["Título","Tipo","Recebimento","Rod.","Status","Avançar",""].map(h=>"<th>"+h+"</th>").join("")+'</tr></thead><tbody>'
+      +fc.map(c=>{
+        const nx=nextStage(c);
+        const adv=nx
+          ?'<button class="btn btn-sm" style="font-size:12px;padding:4px 10px;white-space:nowrap" onclick="event.stopPropagation();quickAdvance(\''+c.id+'\')">→ '+(BL[nx]||nx)+'</button>'
+          :'<span style="font-size:12px;color:#aaa">—</span>';
+        return'<tr onclick="openDetail(\''+c.id+'\')">'
+          +'<td style="font-weight:500">'+esc(c.titulo)+'</td>'
+          +'<td style="color:#888">'+esc(c.tipo||"—")+'</td>'
+          +'<td style="color:#888">'+fmtDate(c.dataRecebimento)+'</td>'
+          +'<td style="text-align:center"'+(c.rodada>1?' class="rod-warn"':'')+'>'+c.rodada+'</td>'
+          +'<td>'+badge(c.status)+'</td>'
+          +'<td>'+adv+'</td>'
+          +'<td style="text-align:right;color:#aaa">›</td></tr>';
+      }).join("")+'</tbody></table></div>';
+  }
+  return'<div class="filters"><div class="filter-group"><label>De</label><input type="date" value="'+filter.from+'" onchange="setFilter(\'from\',this.value)" style="width:140px"/></div>'
+    +'<div class="filter-group"><label>Até</label><input type="date" value="'+filter.to+'" onchange="setFilter(\'to\',this.value)" style="width:140px"/></div>'
+    +'<div class="filter-group"><label>Status</label><select onchange="setFilter(\'status\',this.value)" style="width:150px"><option value="">Todos</option>'+opts+'</select></div>'
+    +clr+'<div class="filter-count">'+fc.length+' registro'+(fc.length!==1?"s":"")+'</div></div>'+tbl;
+}
+function renderNewForm(){
+  return'<div class="form-grid">'
+    +'<div class="form-field"><label>Título / Identificação *</label><input type="text" id="f-titulo" placeholder="Ex.: Contrato de prestação de serviços nº 23/2025"/></div>'
+    +'<div class="form-field"><label>Tipo de contrato</label><input type="text" id="f-tipo" placeholder="Ex.: Prestação de serviços, locação, NDA..."/></div>'
+    +'<div class="form-row"><div class="form-field"><label>Entrada via</label><select id="f-entrada"><option value="MCO">MCO</option><option value="GBL">GBL</option></select></div>'
+    +'<div class="form-field"><label>Data de recebimento</label><input type="date" id="f-data" value="'+today()+'"/></div></div>'
+    +'<div class="form-field"><label>Observações</label><textarea id="f-obs" rows="3" placeholder="Informações adicionais..."></textarea></div>'
+    +'<div><button class="btn btn-primary" onclick="addContract()">＋ Registrar minuta</button></div></div>';
+}
+function renderImport(){
+  return'<div style="max-width:560px"><p style="color:#888;font-size:14px;margin-bottom:1.25rem">Importe um arquivo Excel (.xlsx, .xls) ou CSV. A primeira linha deve conter os cabeçalhos.</p>'
+    +'<div class="import-ref"><p style="font-weight:500;margin-bottom:8px">Colunas reconhecidas:</p>'
+    +'<table><thead><tr><th>Coluna</th><th>Descrição</th><th>Obrigatório</th></tr></thead><tbody>'
+    +'<tr><td>Título</td><td>Identificação da minuta</td><td>Sim</td></tr>'
+    +'<tr><td>Tipo</td><td>Tipo de contrato</td><td>Não</td></tr>'
+    +'<tr><td>Entrada</td><td>MCO ou GBL</td><td>Não (padrão: MCO)</td></tr>'
+    +'<tr><td>Data</td><td>Data de recebimento (AAAA-MM-DD ou serial Excel)</td><td>Não (padrão: hoje)</td></tr>'
+    +'<tr><td>Status</td><td>Recebida · MCO · GBL · MVC · FTD</td><td>Não (padrão: Recebida)</td></tr>'
+    +'<tr><td>Observações</td><td>Notas adicionais</td><td>Não</td></tr>'
+    +'</tbody></table></div>'
+    +'<input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleFile(this)"/>'
+    +'<button class="btn" onclick="document.getElementById(\'fileInput\').click()" style="font-size:14px;padding:10px 22px">↑ Selecionar arquivo</button></div>';
+}
+function renderDetail(){
+  const c=selected, nx=nextStage(c), isFTD=nx==="ftd", showRet=c.status==="ftd";
+  let adv="";
+  if(nx){
+    adv='<div class="detail-section"><div class="detail-section-title">Próxima etapa: '+badge(nx)+'</div>'
+      +(isFTD?'<div class="form-field" style="margin-bottom:12px"><label style="font-size:12px;color:#888">Resultado (MVC)</label><select id="adv-resultado" style="width:100%"><option value="aprovado">Aprovado</option><option value="aprovado_ressalvas">Aprovado com ressalvas</option><option value="rejeitado">Rejeitado</option></select></div>':"")
+      +'<div class="form-field" style="margin-bottom:12px"><label style="font-size:12px;color:#888">Observação (opcional)</label><textarea id="adv-obs" rows="2" placeholder="Nota sobre esta etapa..."></textarea></div>'
+      +'<button class="btn btn-primary btn-sm" onclick="doAdvance()">→ Avançar etapa</button></div>';
+  }
+  let ret="";
+  if(showRet){
+    ret='<div class="detail-section"><p style="font-size:13px;color:#888;margin-bottom:8px">FTD retornou a minuta para nova análise?</p>'
+      +'<button class="btn btn-sm" onclick="doRetorno()">↺ Registrar retorno — iniciar rodada '+(c.rodada+1)+'</button></div>';
+  }
+  const hist=[...c.historico].reverse().map(h=>'<div class="history-entry"><div class="history-date">'+new Date(h.data).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"})+'</div><div>'+badge(h.status)+(h.resultado?'<span style="font-size:12px;color:#888;margin-left:6px">('+h.resultado.replace(/_/g," ")+')</span>':"")+(h.obs?'<div class="history-obs">'+esc(h.obs)+'</div>':"")+'</div></div>').join("");
+  return'<div style="margin-bottom:12px"><button class="btn btn-sm" onclick="closeDetail()">← Voltar à lista</button></div>'
+    +'<div class="detail-panel">'
+    +'<div class="detail-header"><div style="flex:1;min-width:0"><div class="detail-meta">Rodada '+c.rodada+' &nbsp;·&nbsp; '+c.entrada+' &nbsp;·&nbsp; '+fmtDate(c.dataRecebimento)+'</div>'
+    +'<h2 style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(c.titulo)+'</h2>'
+    +(c.tipo?'<p style="font-size:13px;color:#888;margin-top:2px">'+esc(c.tipo)+'</p>':"")+'</div></div>'
+    +'<div class="detail-section">'+renderStepper(c)+'</div>'
+    +adv+ret
+    +'<div class="detail-section"><div class="detail-section-title">Histórico</div>'+hist+'</div>'
+    +'<div class="detail-section" style="display:flex;justify-content:flex-end"><button class="btn btn-danger btn-sm" onclick="doDelete(\''+c.id+'\')">🗑 Excluir registro</button></div>'
+    +'</div>';
+}
+function render(){
+  renderKPIs(); renderTabs();
+  let html="";
+  if(selected)html=renderDetail();
+  else if(tab==="contracts")html=renderContractsList();
+  else if(tab==="new")html=renderNewForm();
+  else if(tab==="import")html=renderImport();
+  document.getElementById("content").innerHTML=html;
+}
+
+/* ── Actions ── */
+function setTab(t){tab=t;selected=null;render();}
+function setFilter(k,v){filter[k]=v;render();}
+function clearFilter(){filter={from:"",to:"",status:""};render();}
+function openDetail(id){selected=contracts.find(c=>c.id===id)||null;render();}
+function closeDetail(){selected=null;render();}
+async function doRefresh(){await dbLoad();render();}
+
+async function addContract(){
+  const titulo=document.getElementById("f-titulo").value.trim();
+  if(!titulo){alert("Informe o título da minuta.");return;}
+  const c={id:uid(),titulo,tipo:document.getElementById("f-tipo").value.trim(),entrada:document.getElementById("f-entrada").value,dataRecebimento:document.getElementById("f-data").value||today(),status:"recebida",rodada:1,resultado:null,obs:document.getElementById("f-obs").value.trim(),historico:[{data:new Date().toISOString(),status:"recebida",obs:"Minuta recebida."}]};
+  contracts=[c,...contracts];tab="contracts";render();
+  await dbInsert(c);
+}
+
+async function quickAdvance(id){
+  const c=contracts.find(x=>x.id===id);if(!c)return;
+  const nx=nextStage(c);if(!nx)return;
+  let resultado=null;
+  if(nx==="ftd"){
+    const ch=prompt("Resultado (MVC):\n1 — Aprovado\n2 — Aprovado com ressalvas\n3 — Rejeitado\n\nDigite 1, 2 ou 3:");
+    if(!ch)return;
+    resultado=ch==="2"?"aprovado_ressalvas":ch==="3"?"rejeitado":"aprovado";
+  }
+  const entry={data:new Date().toISOString(),status:nx,obs:"",...(nx==="ftd"?{resultado}:{})};
+  const u={...c,status:nx,resultado:nx==="ftd"?resultado:c.resultado,historico:[...c.historico,entry]};
+  contracts=contracts.map(x=>x.id!==id?x:u);render();
+  await dbUpdate(u);
+}
+
+async function doAdvance(){
+  if(!selected)return;
+  const nx=nextStage(selected);if(!nx)return;
+  const obs=document.getElementById("adv-obs").value.trim();
+  const resultado=document.getElementById("adv-resultado")?document.getElementById("adv-resultado").value:null;
+  const entry={data:new Date().toISOString(),status:nx,obs,...(nx==="ftd"?{resultado}:{})};
+  const u={...selected,status:nx,resultado:nx==="ftd"?resultado:selected.resultado,historico:[...selected.historico,entry]};
+  contracts=contracts.map(c=>c.id!==selected.id?c:u);selected=u;render();
+  await dbUpdate(u);
+}
+
+async function doRetorno(){
+  if(!selected)return;
+  const rodada=selected.rodada+1;
+  const entry={data:new Date().toISOString(),status:"retorno",obs:"FTD retornou a minuta. Início da rodada "+rodada+"."};
+  const u={...selected,status:"recebida",resultado:null,rodada,historico:[...selected.historico,entry]};
+  contracts=contracts.map(c=>c.id!==selected.id?c:u);selected=u;render();
+  await dbUpdate(u);
+}
+
+async function doDelete(id){
+  if(!confirm("Confirma a exclusão deste registro?"))return;
+  contracts=contracts.filter(c=>c.id!==id);selected=null;render();
+  await dbDelete(id);
+}
+
+async function handleFile(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async ev=>{
+    try{
+      const wb=XLSX.read(ev.target.result,{type:"binary"});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:""});
+      const now=new Date().toISOString();
+      const smap={"recebida":"recebida","mco":"mco_reg","mco registrou":"mco_reg","gbl":"gbl_analise","com gbl":"gbl_analise","mvc":"mvc_revisao","com mvc":"mvc_revisao","ftd":"ftd","resp. à ftd":"ftd","respondida":"ftd","encerrada":"ftd"};
+      const imported=rows.map((row,i)=>{
+        const titulo=row["Título"]||row["Titulo"]||row["titulo"]||"Contrato "+(i+1);
+        const tipo=row["Tipo"]||row["tipo"]||"";
+        const entrada=String(row["Entrada"]||row["entrada"]||"").toUpperCase().includes("GBL")?"GBL":"MCO";
+        let data=row["Data"]||row["Data Recebimento"]||row["data"]||today();
+        if(typeof data==="number"){const d=XLSX.SSF.parse_date_code(data);data=d.y+"-"+String(d.m).padStart(2,"0")+"-"+String(d.d).padStart(2,"0");}
+        else{data=String(data).substring(0,10);}
+        const status=smap[String(row["Status"]||row["status"]||"").trim().toLowerCase()]||"recebida";
+        return{id:uid(),titulo:String(titulo),tipo:String(tipo),entrada,dataRecebimento:data,status,rodada:1,resultado:null,obs:String(row["Observações"]||row["Observacoes"]||""),historico:[{data:now,status,obs:"Importado via planilha."}]};
+      });
+      contracts=[...imported,...contracts];tab="contracts";render();
+      setSync("loading","Enviando "+imported.length+" registro(s)...");
+      await Promise.all(imported.map(c=>fetch(API,{method:"POST",headers:{...HDR,"Prefer":"return=minimal"},body:JSON.stringify(toDb(c))})));
+      setSync("ok",imported.length+" minuta(s) importada(s).");
+    }catch(e){setSync("err","Erro ao importar: "+e.message);}
+    input.value="";
+  };
+  reader.readAsBinaryString(file);
+}
+
+function exportBilling(){
+  const fc=filtered();
+  if(!fc.length){alert("Nenhum registro para exportar.");return;}
+  const rows=fc.map(c=({"Título":c.titulo,"Tipo":c.tipo,"Entrada":c.entrada,"Data Recebimento":c.dataRecebimento,"Rodada":c.rodada,"Status":BL[c.status]||c.status,"Resultado":c.resultado?c.resultado.replace(/_/g," "):"","Observações":c.obs}));
+  const ws=XLSX.utils.json_to_sheet(rows);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,"Minutas FTD");
+  XLSX.writeFile(wb,"minutas_ftd_"+today()+".xlsx");
+}
+
+(async()=>{await dbLoad();render();})();
+</script>
+</body>
+</html>
